@@ -1,6 +1,8 @@
 import { DepartmentPage } from "../_components/DepartmentPage";
 import { departments } from "../data";
 
+export const revalidate = 60;
+
 export const metadata = {
   title: "Procurement — Division Hub",
   description: departments.procurement.shortDescription,
