@@ -39,12 +39,14 @@ export function Contact() {
             v="basanichaitanyareddy@gmail.com"
             href="mailto:basanichaitanyareddy@gmail.com"
           />
+          {/*
           <ContactRow
             k="github"
             v="github.com/chaitanya2404"
             href="https://github.com/chaitanya2404"
             external
           />
+          */}
           <ContactRow k="based" v="Irving, TX · open to relocation" />
           <p
             style={{

@@ -58,6 +58,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               <li><Link href="/#experience" className="hover:text-slate-900">Experience</Link></li>
               <li><Link href="/#projects" className="hover:text-slate-900">Projects</Link></li>
               <li><Link href="/#contact" className="hover:text-slate-900">Contact</Link></li>
+              {/*
               <li>
                 <a
                   href="https://github.com/chaitanya2404"
@@ -68,6 +69,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                   GitHub
                 </a>
               </li>
+              */}
             </ul>
           </nav>
         </div>
