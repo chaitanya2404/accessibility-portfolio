@@ -33,11 +33,11 @@ const ROLES: Role[] = [
   },
   {
     company: "Chemeketa Community College",
-    role: "Web Developer",
+    role: "Integration Analyst",
     period: "Earlier",
     bullets: [
-      "Maintained academic websites for students, faculty, and staff.",
-      "Designed page templates, navigation, and visual content for non-technical authors.",
+      "Maintained academic websites and system integrations for students, faculty, and staff.",
+      "Designed integration templates, data mappings, and admin views for non-technical owners.",
       "Ran usability sessions and addressed accessibility findings before launch.",
     ],
   },
