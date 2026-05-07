@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { LiveRegionProvider } from "@/components/LiveRegion";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,7 +30,8 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-slate-900">
+      <body className="min-h-full flex flex-col bg-surface text-fg">
+        <LiveRegionProvider>
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
@@ -73,6 +75,7 @@ export default function RootLayout({
             </p>
           </div>
         </footer>
+        </LiveRegionProvider>
       </body>
     </html>
   );

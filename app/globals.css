@@ -1,32 +1,86 @@
 @import "tailwindcss";
 
+/*
+ * Two-layer token system:
+ *   1. Primitives — raw color values. Don't reference these in components.
+ *   2. Semantics — purpose-named tokens that reference primitives. These are
+ *      what components consume (via Tailwind utilities derived in @theme).
+ *
+ * To re-skin the app, swap the right-hand-side of the semantic block.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --muted: #475569;
-  --border: #e2e8f0;
-  --accent: #4338ca;
-  --accent-foreground: #ffffff;
-  --focus-ring: #1d4ed8;
+  /* Layer 1: primitives */
+  --primitive-white: #ffffff;
+  --primitive-slate-50: #f8fafc;
+  --primitive-slate-100: #f1f5f9;
+  --primitive-slate-200: #e2e8f0;
+  --primitive-slate-500: #64748b;
+  --primitive-slate-600: #475569;
+  --primitive-slate-700: #334155;
+  --primitive-slate-900: #0f172a;
+  --primitive-indigo-50: #eef2ff;
+  --primitive-indigo-200: #c7d2fe;
+  --primitive-indigo-700: #4338ca;
+  --primitive-indigo-800: #3730a3;
+  --primitive-emerald-100: #d1fae5;
+  --primitive-emerald-700: #047857;
+  --primitive-amber-100: #fef3c7;
+  --primitive-amber-700: #b45309;
+  --primitive-rose-100: #ffe4e6;
+  --primitive-rose-700: #be123c;
+
+  /* Layer 2: semantics */
+  --surface: var(--primitive-white);
+  --surface-raised: var(--primitive-slate-50);
+  --surface-sunken: var(--primitive-slate-100);
+  --fg: var(--primitive-slate-900);
+  --fg-muted: var(--primitive-slate-700);
+  --fg-subtle: var(--primitive-slate-600);
+  --accent: var(--primitive-indigo-700);
+  --accent-strong: var(--primitive-indigo-800);
+  --accent-fg: var(--primitive-white);
+  --accent-soft: var(--primitive-indigo-50);
+  --divider: var(--primitive-slate-200);
+  --focus: var(--primitive-indigo-700);
+  --pass: var(--primitive-emerald-700);
+  --pass-soft: var(--primitive-emerald-100);
+  --warn: var(--primitive-amber-700);
+  --warn-soft: var(--primitive-amber-100);
+  --fail: var(--primitive-rose-700);
+  --fail-soft: var(--primitive-rose-100);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-border: var(--border);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
   --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-divider: var(--divider);
+  --color-focus: var(--focus);
+  --color-pass: var(--pass);
+  --color-pass-soft: var(--pass-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-fail: var(--fail);
+  --color-fail-soft: var(--fail-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 * {
-  border-color: var(--border);
+  border-color: var(--divider);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--surface);
+  color: var(--fg);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
@@ -35,7 +89,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -46,8 +100,8 @@ body {
   top: 0;
   z-index: 100;
   padding: 0.75rem 1rem;
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--fg);
+  color: var(--surface);
   font-weight: 600;
   text-decoration: none;
 }
@@ -55,6 +109,18 @@ body {
 .skip-link:focus {
   left: 1rem;
   top: 1rem;
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }

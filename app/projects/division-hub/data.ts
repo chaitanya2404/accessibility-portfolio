@@ -1,23 +1,35 @@
-export type Staff = {
-  name: string;
-  role: string;
-  email: string;
-  extension: string;
-};
+import { z } from "zod";
 
-export type DepartmentSlug = "procurement" | "hr" | "facilities";
+const StaffSchema = z.object({
+  name: z.string().min(1),
+  role: z.string().min(1),
+  email: z.email(),
+  extension: z.string().regex(/^\d{4}$/),
+});
 
-export type Department = {
-  slug: DepartmentSlug;
-  name: string;
-  shortDescription: string;
-  description: string;
-  responsibilities: string[];
-  gradient: string;
-  staff: Staff[];
-};
+const DepartmentSlugSchema = z.enum(["procurement", "hr", "facilities"]);
 
-export const departments: Record<DepartmentSlug, Department> = {
+const DepartmentSchema = z.object({
+  slug: DepartmentSlugSchema,
+  name: z.string().min(1),
+  shortDescription: z.string().min(1),
+  description: z.string().min(1),
+  responsibilities: z.array(z.string().min(1)).min(1),
+  gradient: z.string().min(1),
+  staff: z.array(StaffSchema).length(6),
+});
+
+const DepartmentsSchema = z.object({
+  procurement: DepartmentSchema,
+  hr: DepartmentSchema,
+  facilities: DepartmentSchema,
+});
+
+export type Staff = z.infer<typeof StaffSchema>;
+export type DepartmentSlug = z.infer<typeof DepartmentSlugSchema>;
+export type Department = z.infer<typeof DepartmentSchema>;
+
+const rawDepartments = {
   procurement: {
     slug: "procurement",
     name: "Procurement",
@@ -89,8 +101,19 @@ export const departments: Record<DepartmentSlug, Department> = {
   },
 };
 
+export const departments = DepartmentsSchema.parse(rawDepartments);
+
 export const departmentList: Department[] = [
   departments.procurement,
   departments.hr,
   departments.facilities,
 ];
+
+export const allStaff: ReadonlyArray<Staff & { departmentSlug: DepartmentSlug; departmentName: string }> =
+  departmentList.flatMap((dept) =>
+    dept.staff.map((s) => ({
+      ...s,
+      departmentSlug: dept.slug,
+      departmentName: dept.name,
+    }))
+  );
