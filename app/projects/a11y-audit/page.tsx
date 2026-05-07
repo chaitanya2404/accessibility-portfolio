@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Heading } from "@/components/Heading";
 import { AuditTabs } from "./_components/AuditTabs";
 
@@ -19,7 +20,18 @@ export default function A11yAuditPage() {
           Twelve foundational WCAG checks against any public URL. Single-page
           mode returns a scored results table; crawl mode discovers up to five
           same-origin pages, audits each, and streams results back as they
-          complete via Server-Sent Events.
+          complete via Server-Sent Events; compare mode runs two URLs and
+          shows a per-check diff.
+        </p>
+        <p className="mt-3 text-sm text-fg-subtle">
+          Honest about what this tool can&rsquo;t detect — see{" "}
+          <Link
+            href="/projects/a11y-audit/about"
+            className="font-medium text-accent hover:text-accent-strong"
+          >
+            About this tool
+          </Link>
+          .
         </p>
       </header>
 

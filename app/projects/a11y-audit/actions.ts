@@ -8,6 +8,23 @@ import type { CheckResult } from "./_lib/checks";
 import { fetchHtml } from "./_lib/http";
 import { consume as consumeRateLimit } from "./_lib/rate-limit";
 
+export type FetchHtmlResponse =
+  | { ok: true; url: string; html: string }
+  | { ok: false; error: string };
+
+export async function fetchAuditableHtml(rawUrl: string): Promise<FetchHtmlResponse> {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return { ok: false, error: "Please enter a URL." };
+  const key = await rateLimitKey();
+  const rl = consumeRateLimit(key, 2);
+  if (!rl.ok) {
+    return { ok: false, error: `Rate limited. Try again in ${rl.retryAfterSeconds}s.` };
+  }
+  const result = await fetchHtml(trimmed);
+  if (!result.ok) return { ok: false, error: result.message };
+  return { ok: true, url: result.url, html: result.html };
+}
+
 export type AuditResults = {
   url: string;
   fetchedAt: string;

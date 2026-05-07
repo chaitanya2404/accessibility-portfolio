@@ -222,6 +222,40 @@ test.describe("A11y audit page", () => {
   });
 });
 
+test.describe("A11y audit compare mode", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/projects/a11y-audit");
+    await page.getByRole("tab", { name: "Compare" }).click();
+  });
+
+  test("renders side-by-side diff with summary stats", async ({ page }) => {
+    await page.getByLabel("Before URL").fill(`${baseUrl}/missing-lang`);
+    await page.getByLabel("After URL").fill(`${baseUrl}/clean`);
+    await page.getByRole("button", { name: /Compare/, exact: true }).click();
+    await expect(page.locator("main").getByRole("status")).toContainText(/Improved/);
+    await expect(page.locator("table caption")).toContainText("→");
+    await expect(page.locator("tbody tr").first()).toBeVisible();
+  });
+
+  test("compare mode is axe-clean after results", async ({ page }) => {
+    await page.getByLabel("Before URL").fill(`${baseUrl}/clean`);
+    await page.getByLabel("After URL").fill(`${baseUrl}/clean`);
+    await page.getByRole("button", { name: /Compare/, exact: true }).click();
+    await expect(page.locator("main").getByRole("status")).toContainText(/Unchanged/);
+    await expectNoAxeViolations(page);
+  });
+});
+
+test.describe("A11y audit about page", () => {
+  test("renders the about/honesty content with comparison table", async ({ page }) => {
+    await page.goto("/projects/a11y-audit/about");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("About this audit tool");
+    await expect(page.locator("main")).toContainText("What this tool cannot detect");
+    await expect(page.locator("table caption")).toContainText("vs. industry tools");
+    await expectNoAxeViolations(page);
+  });
+});
+
 test.describe("A11y audit crawl mode", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/projects/a11y-audit");
