@@ -2,30 +2,56 @@
 
 import { useState, useTransition } from "react";
 import { Loader2, PlayCircle } from "lucide-react";
+import { useAnnounce } from "@/components/LiveRegion";
+import { track } from "@/lib/analytics";
 import { runAudit, type AuditResults } from "../actions";
 import { ResultsTable } from "./ResultsTable";
+import { ExportButton } from "./ExportButton";
 
 type State =
   | { kind: "idle" }
   | { kind: "running"; url: string }
-  | { kind: "success"; url: string; results: AuditResults }
+  | { kind: "success"; url: string; results: AuditResults; cached: boolean }
   | { kind: "error"; url: string; error: string };
 
 export function AuditForm() {
   const [url, setUrl] = useState("https://example.com");
   const [state, setState] = useState<State>({ kind: "idle" });
   const [pending, startTransition] = useTransition();
+  const announce = useAnnounce();
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = url.trim();
     setState({ kind: "running", url: trimmed });
+    announce(`Running audit on ${trimmed}.`, "polite");
+    track("audit.run.started", { url: trimmed, mode: "single" });
+    const start = Date.now();
     startTransition(async () => {
       const response = await runAudit(trimmed);
+      const durationMs = Date.now() - start;
       if (response.ok) {
-        setState({ kind: "success", url: response.url, results: response.results });
+        setState({
+          kind: "success",
+          url: response.results.url,
+          results: response.results,
+          cached: response.cached,
+        });
+        announce(
+          `Audit complete for ${response.results.url}. ${describeResults(response.results)}`,
+          "polite"
+        );
+        track("audit.run.completed", {
+          url: response.results.url,
+          durationMs,
+          passes: response.results.counts.pass,
+          warnings: response.results.counts.warning,
+          failures: response.results.counts.fail,
+        });
       } else {
         setState({ kind: "error", url: trimmed, error: response.error });
+        announce(`Audit failed: ${response.error}`, "assertive");
+        track("audit.run.failed", { url: trimmed, reason: response.error });
       }
     });
   };
@@ -34,13 +60,13 @@ export function AuditForm() {
     state.kind === "running"
       ? `Running audit on ${state.url}…`
       : state.kind === "success"
-        ? `Audit complete for ${state.url}. ${describeResults(state.results)}`
+        ? `Audit complete for ${state.url}. ${describeResults(state.results)}${state.cached ? " (cached)" : ""}`
         : "";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <form onSubmit={onSubmit} className="space-y-3" aria-describedby="audit-disclaimer">
-        <label htmlFor="audit-url" className="block text-sm font-medium text-slate-800">
+        <label htmlFor="audit-url" className="block text-sm font-medium text-fg">
           URL to audit
         </label>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -54,12 +80,12 @@ export function AuditForm() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             disabled={pending}
-            className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus-visible:border-indigo-700 disabled:bg-slate-100"
+            className="flex-1 rounded-md border border-divider bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus-visible:border-accent disabled:bg-surface-raised"
           />
           <button
             type="submit"
             disabled={pending || !url.trim()}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-fg hover:bg-accent-strong disabled:cursor-not-allowed disabled:bg-fg-subtle"
           >
             {pending ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -74,7 +100,7 @@ export function AuditForm() {
       <p
         role="status"
         aria-live="polite"
-        className={liveMessage ? "text-sm text-slate-700" : "sr-only"}
+        className={liveMessage ? "text-sm text-fg-muted" : "sr-only"}
       >
         {liveMessage}
       </p>
@@ -82,7 +108,7 @@ export function AuditForm() {
       {state.kind === "error" && (
         <div
           role="alert"
-          className="rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"
+          className="rounded-md border border-fail/40 bg-fail-soft p-4 text-sm text-fail"
         >
           <p className="font-semibold">Audit failed</p>
           <p className="mt-1">{state.error}</p>
@@ -90,17 +116,28 @@ export function AuditForm() {
       )}
 
       {state.kind === "success" && (
-        <ResultsTable results={state.results} url={state.url} />
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-fg-muted">
+              {state.cached ? (
+                <>
+                  Served from cache (5-minute TTL).{" "}
+                  <span className="font-mono text-xs">v{state.results.checksVersion}</span>
+                </>
+              ) : (
+                <>Fetched and audited in {state.results.durationMs}ms.</>
+              )}
+            </p>
+            <ExportButton results={state.results} />
+          </div>
+          <ResultsTable results={state.results} />
+        </div>
       )}
     </div>
   );
 }
 
 function describeResults(r: AuditResults): string {
-  const parts: string[] = [];
-  parts.push(r.lang.ok ? "Lang attribute present." : "Lang attribute missing.");
-  parts.push(r.title.ok ? "Title present." : "Title missing.");
-  parts.push(`${r.imagesMissingAlt.count} images missing alt.`);
-  parts.push(`${r.inputsMissingLabels.count} inputs missing labels.`);
-  return parts.join(" ");
+  const { pass, warning, fail } = r.counts;
+  return `Score ${r.score}/100. ${pass} pass, ${warning} warning, ${fail} fail.`;
 }

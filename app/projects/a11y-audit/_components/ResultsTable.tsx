@@ -1,167 +1,103 @@
 import clsx from "clsx";
 import { Check, AlertTriangle, X } from "lucide-react";
 import type { AuditResults } from "../actions";
+import type { CheckResult, CheckStatus, Severity } from "../_lib/checks";
 
-type Status = "pass" | "warning" | "fail";
-
-type Row = {
-  check: string;
-  status: Status;
-  details: React.ReactNode;
+const STATUS_BADGE: Record<CheckStatus, { className: string; label: string; Icon: React.ComponentType<{ className?: string }> }> = {
+  pass: { className: "bg-pass-soft text-pass border-pass/30", label: "Pass", Icon: Check },
+  warning: { className: "bg-warn-soft text-warn border-warn/30", label: "Warning", Icon: AlertTriangle },
+  fail: { className: "bg-fail-soft text-fail border-fail/40", label: "Fail", Icon: X },
 };
 
-const BADGE_STYLES: Record<Status, string> = {
-  pass: "bg-emerald-100 text-emerald-900 border-emerald-300",
-  warning: "bg-amber-100 text-amber-900 border-amber-300",
-  fail: "bg-rose-100 text-rose-900 border-rose-300",
+const SEVERITY_LABEL: Record<Severity, string> = {
+  critical: "Critical",
+  serious: "Serious",
+  moderate: "Moderate",
+  minor: "Minor",
 };
 
-const STATUS_ICONS: Record<Status, React.ComponentType<{ className?: string }>> = {
-  pass: Check,
-  warning: AlertTriangle,
-  fail: X,
-};
-
-const STATUS_LABEL: Record<Status, string> = {
-  pass: "Pass",
-  warning: "Warning",
-  fail: "Fail",
-};
-
-function StatusBadge({ status }: { status: Status }) {
-  const Icon = STATUS_ICONS[status];
+function StatusBadge({ status }: { status: CheckStatus }) {
+  const { className, label, Icon } = STATUS_BADGE[status];
   return (
     <span
       className={clsx(
         "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-        BADGE_STYLES[status]
+        className
       )}
     >
       <Icon className="h-3 w-3" aria-hidden="true" />
-      {STATUS_LABEL[status]}
+      {label}
     </span>
   );
 }
 
-function rowsFrom(results: AuditResults): Row[] {
-  return [
-    {
-      check: "<html lang> attribute",
-      status: results.lang.ok ? "pass" : "fail",
-      details: results.lang.ok ? (
-        <>
-          Found: <code className="rounded bg-slate-100 px-1 py-0.5">{results.lang.value}</code>
-        </>
-      ) : (
-        "Missing or empty. Set lang=\"en\" (or the appropriate code) on <html>."
-      ),
-    },
-    {
-      check: "<title> element",
-      status: results.title.ok ? "pass" : "fail",
-      details: results.title.ok ? (
-        <>
-          “{results.title.value}”
-        </>
-      ) : (
-        "Missing or empty. Add a descriptive <title> in <head>."
-      ),
-    },
-    {
-      check: "Images missing alt",
-      status: results.imagesMissingAlt.count === 0 ? "pass" : "warning",
-      details:
-        results.imagesMissingAlt.count === 0 ? (
-          "Every <img> declares an alt attribute."
-        ) : (
-          <>
-            <p className="mb-1">
-              {results.imagesMissingAlt.count}{" "}
-              {results.imagesMissingAlt.count === 1 ? "image" : "images"} without an{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5">alt</code> attribute.
-              Decorative images need <code className="rounded bg-slate-100 px-1 py-0.5">alt=&quot;&quot;</code>;
-              meaningful images need a description.
-            </p>
-            <p className="text-xs font-medium text-slate-600">First {results.imagesMissingAlt.samples.length}:</p>
-            <ul className="mt-1 space-y-1 text-xs text-slate-700">
-              {results.imagesMissingAlt.samples.map((src, i) => (
-                <li key={i}>
-                  <code className="break-all rounded bg-slate-100 px-1 py-0.5">{src}</code>
-                </li>
-              ))}
-            </ul>
-          </>
-        ),
-    },
-    {
-      check: "Inputs missing labels",
-      status: results.inputsMissingLabels.count === 0 ? "pass" : "warning",
-      details:
-        results.inputsMissingLabels.count === 0 ? (
-          "Every text input has a label, aria-label, or aria-labelledby."
-        ) : (
-          <>
-            <p className="mb-1">
-              {results.inputsMissingLabels.count}{" "}
-              {results.inputsMissingLabels.count === 1 ? "input" : "inputs"} without an
-              associated label, aria-label, or aria-labelledby. (Hidden, submit, button,
-              reset, and image inputs are excluded.)
-            </p>
-            <p className="text-xs font-medium text-slate-600">First {results.inputsMissingLabels.samples.length}:</p>
-            <ul className="mt-1 space-y-1 text-xs text-slate-700">
-              {results.inputsMissingLabels.samples.map((sample, i) => (
-                <li key={i}>
-                  <code className="break-all rounded bg-slate-100 px-1 py-0.5">{sample}</code>
-                </li>
-              ))}
-            </ul>
-          </>
-        ),
-    },
-  ];
+function ViolationList({ check }: { check: CheckResult }) {
+  if (check.violations.length === 0) return null;
+  return (
+    <details className="mt-2 text-xs">
+      <summary className="cursor-pointer font-medium text-fg-subtle">
+        Show first {check.violations.length} violation{check.violations.length === 1 ? "" : "s"}
+      </summary>
+      <ul className="mt-2 space-y-2">
+        {check.violations.map((v, i) => (
+          <li key={i} className="rounded border border-divider bg-surface-raised p-2">
+            <p className="mb-1 text-fg-muted">{v.description}</p>
+            {v.snippet ? (
+              <pre
+                aria-label="HTML snippet for violation"
+                className="overflow-x-auto rounded bg-surface-sunken p-2 font-mono text-[11px] text-fg"
+              >
+                <code>{v.snippet}</code>
+              </pre>
+            ) : null}
+            {v.line ? (
+              <p className="mt-1 text-fg-subtle">Line {v.line}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
 }
 
-export function ResultsTable({
-  results,
-  url,
-}: {
-  results: AuditResults;
-  url: string;
-}) {
-  const rows = rowsFrom(results);
-
+export function ResultsTable({ results }: { results: AuditResults }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200">
+    <div className="overflow-x-auto rounded-lg border border-divider">
       <table className="w-full border-collapse text-left text-sm">
-        <caption className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-900">
-          Audit results for <span className="break-all font-mono text-indigo-800">{url}</span>
+        <caption className="border-b border-divider bg-surface-raised px-4 py-3 text-left text-sm font-semibold text-fg">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span>
+              Audit for <span className="break-all font-mono text-accent">{results.url}</span>
+            </span>
+            <span className="font-mono text-xs text-fg-subtle">
+              Score {results.score}/100 · {results.counts.pass} pass · {results.counts.warning} warn · {results.counts.fail} fail · {results.durationMs}ms
+            </span>
+          </div>
         </caption>
-        <thead className="bg-slate-50 text-slate-700">
+        <thead className="bg-surface-raised text-fg-muted">
           <tr>
-            <th scope="col" className="border-b border-slate-200 px-4 py-3 font-semibold">
-              Check
-            </th>
-            <th scope="col" className="border-b border-slate-200 px-4 py-3 font-semibold">
-              Status
-            </th>
-            <th scope="col" className="border-b border-slate-200 px-4 py-3 font-semibold">
-              Details
-            </th>
+            <th scope="col" className="border-b border-divider px-4 py-3 font-semibold">Check</th>
+            <th scope="col" className="border-b border-divider px-4 py-3 font-semibold">WCAG</th>
+            <th scope="col" className="border-b border-divider px-4 py-3 font-semibold">Severity</th>
+            <th scope="col" className="border-b border-divider px-4 py-3 font-semibold">Status</th>
+            <th scope="col" className="border-b border-divider px-4 py-3 font-semibold">Details</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.check} className="border-b border-slate-100 last:border-0 align-top">
-              <th
-                scope="row"
-                className="px-4 py-3 text-left font-medium text-slate-900"
-              >
-                <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">{row.check}</code>
+          {results.checks.map((check) => (
+            <tr key={check.id} className="border-b border-divider/60 align-top last:border-0">
+              <th scope="row" className="px-4 py-3 text-left font-medium text-fg">
+                {check.name}
               </th>
+              <td className="px-4 py-3 text-xs text-fg-subtle">{check.wcagCriterion}</td>
+              <td className="px-4 py-3 text-xs text-fg-muted">{SEVERITY_LABEL[check.severity]}</td>
               <td className="px-4 py-3">
-                <StatusBadge status={row.status} />
+                <StatusBadge status={check.status} />
               </td>
-              <td className="px-4 py-3 text-slate-700">{row.details}</td>
+              <td className="px-4 py-3 text-fg-muted">
+                <p>{check.summary}</p>
+                <ViolationList check={check} />
+              </td>
             </tr>
           ))}
         </tbody>

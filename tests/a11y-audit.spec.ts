@@ -3,47 +3,68 @@ import { createServer, type Server } from "node:http";
 import { AddressInfo } from "node:net";
 import { expectNoAxeViolations } from "./helpers";
 
+function cleanShell(body: string, navLinks: string[] = ["/about"]): string {
+  const links = navLinks.map((h) => `<a href="${h}">Page ${h}</a>`).join(" ");
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <title>Fixture</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <header><nav>${links}</nav></header>
+    <main>
+      <h1>Fixture page</h1>
+      ${body}
+    </main>
+    <footer><p>Footer</p></footer>
+  </body>
+</html>`;
+}
+
 const FIXTURES: Record<string, { contentType?: string; body: string }> = {
   "/clean": {
-    body: `<!doctype html>
-<html lang="en">
-  <head><title>Clean fixture</title></head>
-  <body>
-    <img src="/cat.png" alt="A cat" />
-    <label for="email">Email</label>
-    <input id="email" type="email" />
-  </body>
-</html>`,
+    body: cleanShell(
+      `<img src="/cat.png" alt="A cat" />
+       <form><label for="email">Email</label><input id="email" type="email" /></form>`
+    ),
   },
   "/missing-lang": {
     body: `<!doctype html>
 <html>
   <head><title>Missing lang</title></head>
-  <body>hello</body>
+  <body><main><h1>Hi</h1></main></body>
 </html>`,
   },
   "/empty-title": {
     body: `<!doctype html>
 <html lang="en">
   <head><title></title></head>
-  <body>hello</body>
+  <body><main><h1>Hi</h1></main></body>
 </html>`,
   },
   "/missing-alt-and-labels": {
-    body: `<!doctype html>
-<html lang="en">
-  <head><title>Issues</title></head>
-  <body>
-    <img src="/a.png" />
-    <img src="/b.png" alt="" />
-    <img src="/c.png" />
-    <input type="text" id="x" />
-    <label for="x">Has label</label>
-    <input type="text" name="orphan" />
-    <input type="hidden" name="csrf" value="abc" />
-    <input type="submit" value="Go" />
-  </body>
-</html>`,
+    body: cleanShell(
+      `<img src="/a.png" />
+       <img src="/b.png" alt="" />
+       <img src="/c.png" />
+       <form>
+         <label for="x">Has label</label>
+         <input type="text" id="x" />
+         <input type="text" name="orphan" />
+         <input type="hidden" name="csrf" value="abc" />
+         <input type="submit" value="Go" />
+       </form>`
+    ),
+  },
+  "/crawl/index": {
+    body: cleanShell("<p>entry</p>", ["/crawl/page-a", "/crawl/page-b"]),
+  },
+  "/crawl/page-a": {
+    body: cleanShell("<p>page a</p>", ["/crawl/index"]),
+  },
+  "/crawl/page-b": {
+    body: cleanShell("<p>page b</p>", ["/crawl/index"]),
   },
 };
 
@@ -81,7 +102,7 @@ test.describe("A11y audit page", () => {
   test("renders the project h1 and the disclaimer aside", async ({ page }) => {
     await expect(page.getByRole("heading", { level: 1, name: "A11y audit tool" })).toBeVisible();
     const aside = page.getByRole("complementary", { name: "Tool scope" });
-    await expect(aside).toContainText("Quick A11y Spot-Check");
+    await expect(aside).toContainText("Static-HTML audits only");
     await expect(aside.getByRole("link", { name: /axe DevTools/ })).toHaveAttribute(
       "href",
       "https://www.deque.com/axe/devtools/"
@@ -92,7 +113,7 @@ test.describe("A11y audit page", () => {
     await expect(page.getByLabel("URL to audit")).toBeVisible();
   });
 
-  test("audits a clean fixture and renders four passing rows", async ({ page }) => {
+  test("audits a clean fixture and every check passes", async ({ page }) => {
     await page.getByLabel("URL to audit").fill(`${baseUrl}/clean`);
     await page.getByRole("button", { name: "Run audit" }).click();
 
@@ -101,8 +122,33 @@ test.describe("A11y audit page", () => {
 
     await expect(page.locator("table caption")).toContainText(`${baseUrl}/clean`);
 
-    const passBadges = page.locator("tbody td").getByText("Pass");
-    await expect(passBadges).toHaveCount(4);
+    const rows = page.locator("tbody tr");
+    await expect(rows).toHaveCount(12);
+    const passBadges = page.locator("tbody td").getByText("Pass", { exact: true });
+    await expect(passBadges).toHaveCount(12);
+    await expect(page.locator("table caption")).toContainText("Score 100/100");
+  });
+
+  test("renders WCAG criterion and severity columns", async ({ page }) => {
+    await page.getByLabel("URL to audit").fill(`${baseUrl}/clean`);
+    await page.getByRole("button", { name: "Run audit" }).click();
+    await expect(page.locator("main").getByRole("status")).toContainText("Audit complete");
+
+    await expect(page.locator("thead")).toContainText("WCAG");
+    await expect(page.locator("thead")).toContainText("Severity");
+    const langRow = page.locator("tbody tr", { hasText: "<html lang> attribute" });
+    await expect(langRow).toContainText("3.1.1 Language of Page");
+  });
+
+  test("download report triggers a JSON download with the audit URL host", async ({ page }) => {
+    await page.getByLabel("URL to audit").fill(`${baseUrl}/clean`);
+    await page.getByRole("button", { name: "Run audit" }).click();
+    await expect(page.locator("main").getByRole("status")).toContainText("Audit complete");
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: /Download report/ }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/^audit-127\.0\.0\.1.*\.json$/);
   });
 
   test("flags missing lang as Fail", async ({ page }) => {
@@ -172,6 +218,43 @@ test.describe("A11y audit page", () => {
     await page.getByLabel("URL to audit").fill(`${baseUrl}/clean`);
     await page.getByRole("button", { name: "Run audit" }).click();
     await expect(page.locator("main").getByRole("status")).toContainText("Audit complete");
+    await expectNoAxeViolations(page);
+  });
+});
+
+test.describe("A11y audit crawl mode", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/projects/a11y-audit");
+    await page.getByRole("tab", { name: "Crawl site" }).click();
+  });
+
+  test("streams page-complete events and renders 3 pages", async ({ page }) => {
+    await page.getByLabel(/Entry URL/).fill(`${baseUrl}/crawl/index`);
+    await page.getByRole("button", { name: "Start crawl" }).click();
+
+    await expect(page.locator("main")).toContainText("Crawl complete", { timeout: 15_000 });
+    const captions = page.locator("table caption");
+    await expect(captions).toHaveCount(3);
+    await expect(captions.first()).toContainText("/crawl/index");
+    const progressLabel = page.locator("label", { hasText: "Crawl complete" });
+    await expect(progressLabel).toBeVisible();
+  });
+
+  test("crawl export downloads JSON of all pages", async ({ page }) => {
+    await page.getByLabel(/Entry URL/).fill(`${baseUrl}/crawl/index`);
+    await page.getByRole("button", { name: "Start crawl" }).click();
+    await expect(page.locator("main")).toContainText("Crawl complete", { timeout: 15_000 });
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: /Download report/ }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/^audit-127\.0\.0\.1.*\.json$/);
+  });
+
+  test("crawl mode is axe-clean once results are visible", async ({ page }) => {
+    await page.getByLabel(/Entry URL/).fill(`${baseUrl}/crawl/index`);
+    await page.getByRole("button", { name: "Start crawl" }).click();
+    await expect(page.locator("main")).toContainText("Crawl complete", { timeout: 15_000 });
     await expectNoAxeViolations(page);
   });
 });
