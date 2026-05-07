@@ -26,10 +26,10 @@ const projects = [
     title: "A11y Audit",
     href: "/projects/a11y-audit",
     description:
-      "Paste in HTML and get a list of accessibility issues with severity, rule reference, and a snippet of the offending markup.",
+      "Paste a URL and the server fetches, parses, and reports on four foundational WCAG checks in a semantic table.",
     Icon: ShieldCheck,
     gradient: "from-rose-500 to-orange-600",
-    available: false,
+    available: true,
   },
 ];
 
