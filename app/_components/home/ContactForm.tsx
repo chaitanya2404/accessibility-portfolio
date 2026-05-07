@@ -10,27 +10,38 @@ import {
 
 type FieldErrors = Partial<Record<keyof ContactInput, string>>;
 
+type Submission =
+  | { ticketId: string; demo: boolean };
+
 export function ContactForm() {
   const [form, setForm] = useState<ContactInput>({ name: "", email: "", message: "" });
+  const [honey, setHoney] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [submitted, setSubmitted] = useState<{ ticketId: string } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState<Submission | null>(null);
   const [pending, startTransition] = useTransition();
   const announce = useAnnounce();
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrors({});
+    setFormError(null);
     startTransition(async () => {
-      const response = await submitContactMessage(form);
+      const response = await submitContactMessage({ ...form, _gotcha: honey });
       if (response.ok) {
-        setSubmitted({ ticketId: response.ticketId });
-        announce(`Message sent. Reference ${response.ticketId}.`, "polite");
+        setSubmitted({ ticketId: response.ticketId, demo: response.demo === true });
+        announce(
+          response.demo
+            ? `Message captured locally. Reference ${response.ticketId}.`
+            : `Message sent. Reference ${response.ticketId}.`,
+          "polite"
+        );
       } else {
         setErrors(response.fieldErrors);
-        announce(
-          `Form has errors: ${Object.values(response.fieldErrors)[0] ?? "Check the form."}`,
-          "assertive"
-        );
+        if (response.formError) setFormError(response.formError);
+        const first =
+          Object.values(response.fieldErrors)[0] ?? response.formError ?? "Check the form.";
+        announce(`Form has errors: ${first}`, "assertive");
       }
     });
   };
@@ -43,11 +54,15 @@ export function ContactForm() {
       >
         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-pass" aria-hidden="true" />
         <div className="text-sm text-pass">
-          <p className="font-semibold">Message sent</p>
+          <p className="font-semibold">
+            {submitted.demo ? "Message captured (demo mode)" : "Message sent"}
+          </p>
           <p className="mt-1">
             Reference{" "}
             <code className="rounded bg-surface px-1.5 py-0.5 font-mono">{submitted.ticketId}</code>.
-            I&rsquo;ll reply within a couple of business days.
+            {submitted.demo
+              ? " The delivery key isn't configured on this deployment yet, so the form validated successfully but no email was sent. Email me directly via the link in the side panel."
+              : " I'll reply within a couple of business days."}
           </p>
         </div>
       </div>
@@ -120,6 +135,25 @@ export function ContactForm() {
           </p>
         )}
       </div>
+
+      {/* Honeypot — hidden from real users; bots tend to fill every field */}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+        <label htmlFor="contact-gotcha">Leave this field empty</label>
+        <input
+          id="contact-gotcha"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honey}
+          onChange={(e) => setHoney(e.target.value)}
+        />
+      </div>
+
+      {formError && (
+        <p role="alert" className="rounded-md border border-fail/40 bg-fail-soft p-3 text-sm text-fail">
+          {formError}
+        </p>
+      )}
 
       <button
         type="submit"
