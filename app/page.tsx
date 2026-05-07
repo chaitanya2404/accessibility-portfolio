@@ -20,7 +20,7 @@ const projects = [
       "A small library of accessible patterns built on Radix primitives: combobox, accordion, dialog, tabs, and toast.",
     Icon: LayoutGrid,
     gradient: "from-emerald-500 to-teal-700",
-    available: false,
+    available: true,
   },
   {
     title: "A11y Audit",
