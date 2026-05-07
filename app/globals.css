@@ -124,3 +124,22 @@ body {
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+@media print {
+  body {
+    background: #ffffff;
+    color: #000000;
+    font-size: 11pt;
+  }
+  a {
+    color: #000000;
+    text-decoration: underline;
+  }
+  /* Tailwind's print:hidden hides the global header / footer / contact CTA */
+  section {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3 {
+    color: #000000;
+  }
+}
