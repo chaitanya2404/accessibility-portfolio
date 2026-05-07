@@ -10,7 +10,7 @@ test.describe("home page", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Accessibility-first frontend, three projects deep.",
+        name: "Accessibility-first frontend, five projects deep.",
       })
     ).toBeVisible();
     expect(await page.locator("h1").count()).toBe(1);

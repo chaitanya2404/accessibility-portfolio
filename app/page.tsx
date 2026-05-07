@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { ArrowRight, Building2, LayoutGrid, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BarChart3,
+  Building2,
+  ClipboardList,
+  LayoutGrid,
+  ShieldCheck,
+} from "lucide-react";
 import { Heading } from "@/components/Heading";
 import { Card } from "@/components/Card";
 
@@ -31,6 +39,26 @@ const projects = [
     gradient: "from-rose-500 to-orange-600",
     available: true,
   },
+  {
+    title: "Service Request Form",
+    href: "https://forms-and-data.vercel.app/projects/service-request",
+    description:
+      "A three-step form modelled as an explicit state machine, submitting via Server Actions with cookie-backed state so it works without JavaScript. Draft save, optimistic UI with rollback, accessible custom file input, and a WCAG 2.1 conformance report.",
+    Icon: ClipboardList,
+    gradient: "from-blue-500 to-cyan-700",
+    available: true,
+    external: true,
+  },
+  {
+    title: "Analytics Dashboard",
+    href: "https://forms-and-data.vercel.app/projects/analytics",
+    description:
+      "URL-driven filter state, streaming Suspense per chart, and three-layer chart accessibility — including a sonification button that plays the line trend as ascending or descending tones for screen-reader users.",
+    Icon: BarChart3,
+    gradient: "from-amber-500 to-rose-600",
+    available: true,
+    external: true,
+  },
 ];
 
 export default function Home() {
@@ -38,7 +66,7 @@ export default function Home() {
     <div className="mx-auto max-w-6xl px-4 py-16">
       <section aria-labelledby="hero-heading" className="mb-16 max-w-3xl">
         <Heading level={1} id="hero-heading">
-          Accessibility-first frontend, three projects deep.
+          Accessibility-first frontend, five projects deep.
         </Heading>
         <p className="mt-6 text-lg text-slate-700">
           A portfolio that treats accessibility as the product, not the polish.
@@ -53,7 +81,7 @@ export default function Home() {
           Projects
         </Heading>
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map(({ title, href, description, Icon, gradient, available }) => (
+          {projects.map(({ title, href, description, Icon, gradient, available, external }) => (
             <Card key={title} as="li" className="flex flex-col">
               <div
                 aria-hidden="true"
@@ -65,14 +93,27 @@ export default function Home() {
                 {title}
               </Heading>
               <p className="mb-4 flex-1 text-sm text-slate-700">{description}</p>
-              <Link
-                href={href}
-                className="inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:text-indigo-900"
-                aria-label={`Open the ${title} project${available ? "" : " (placeholder route)"}`}
-              >
-                {available ? `View ${title}` : `${title} (coming soon)`}
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              {external ? (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:text-indigo-900"
+                  aria-label={`Open the ${title} project (opens in a new tab)`}
+                >
+                  View {title}
+                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                </a>
+              ) : (
+                <Link
+                  href={href}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:text-indigo-900"
+                  aria-label={`Open the ${title} project${available ? "" : " (placeholder route)"}`}
+                >
+                  {available ? `View ${title}` : `${title} (coming soon)`}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              )}
             </Card>
           ))}
         </ul>
