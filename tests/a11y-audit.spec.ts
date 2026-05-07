@@ -96,7 +96,7 @@ test.describe("A11y audit page", () => {
     await page.getByLabel("URL to audit").fill(`${baseUrl}/clean`);
     await page.getByRole("button", { name: "Run audit" }).click();
 
-    const status = page.getByRole("status");
+    const status = page.locator("main").getByRole("status");
     await expect(status).toContainText("Audit complete");
 
     await expect(page.locator("table caption")).toContainText(`${baseUrl}/clean`);
@@ -161,7 +161,7 @@ test.describe("A11y audit page", () => {
     );
     await button.click();
     await responsePromise;
-    await expect(page.getByRole("status")).toContainText("Audit complete");
+    await expect(page.locator("main").getByRole("status")).toContainText("Audit complete");
   });
 
   test("page has zero axe violations on initial load", async ({ page }) => {
@@ -171,7 +171,7 @@ test.describe("A11y audit page", () => {
   test("page has zero axe violations after a successful run", async ({ page }) => {
     await page.getByLabel("URL to audit").fill(`${baseUrl}/clean`);
     await page.getByRole("button", { name: "Run audit" }).click();
-    await expect(page.getByRole("status")).toContainText("Audit complete");
+    await expect(page.locator("main").getByRole("status")).toContainText("Audit complete");
     await expectNoAxeViolations(page);
   });
 });
