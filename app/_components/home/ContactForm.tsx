@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { useAnnounce } from "@/components/LiveRegion";
+import { PAPER_THEME, T } from "./theme";
 
 type ContactInput = {
   name: string;
@@ -39,6 +39,26 @@ function isAutomatedBrowser(): boolean {
   return navigator.webdriver === true;
 }
 
+const labelStyle: React.CSSProperties = {
+  fontFamily: T.headFont,
+  fontSize: 11,
+  color: PAPER_THEME.ink3,
+  textTransform: "uppercase",
+  letterSpacing: ".08em",
+};
+
+const inputStyle: React.CSSProperties = {
+  appearance: "none",
+  border: `1px solid ${PAPER_THEME.rule}`,
+  background: PAPER_THEME.bg,
+  color: PAPER_THEME.ink,
+  fontFamily: T.bodyFont,
+  fontSize: 14,
+  padding: "12px 14px",
+  borderRadius: 0,
+  resize: "vertical",
+};
+
 export function ContactForm() {
   const [form, setForm] = useState<ContactInput>({ name: "", email: "", message: "" });
   const [honey, setHoney] = useState("");
@@ -61,15 +81,12 @@ export function ContactForm() {
     setErrors({});
 
     if (honey) {
-      // Honeypot tripped: pretend success and don't burn a real send.
       setSubmitted({ ticketId: "MSG-BOT", demo: true });
       return;
     }
 
     const ticketId = newTicketId();
 
-    // Skip real delivery in automated browsers (Playwright) and when no key is
-    // present. Both fall back to a "demo mode" success state.
     if (!ACCESS_KEY || isAutomatedBrowser()) {
       setSubmitted({ ticketId, demo: true });
       announce(`Message captured locally. Reference ${ticketId}.`, "polite");
@@ -103,8 +120,7 @@ export function ContactForm() {
           setSubmitted({ ticketId, demo: false });
           announce(`Message sent. Reference ${ticketId}.`, "polite");
         } else {
-          const reason =
-            data.message ?? `HTTP ${response.status}`;
+          const reason = data.message ?? `HTTP ${response.status}`;
           setFormError(`Could not deliver your message: ${reason}`);
           announce(`Form submission failed: ${reason}`, "assertive");
         }
@@ -120,31 +136,56 @@ export function ContactForm() {
     return (
       <div
         role="status"
-        className="flex items-start gap-3 rounded-md border border-pass/30 bg-pass-soft p-4"
+        style={{
+          padding: 18,
+          border: `1px solid ${PAPER_THEME.a11y}`,
+          background: PAPER_THEME.bg2,
+          color: PAPER_THEME.ink,
+          fontFamily: T.bodyFont,
+          fontSize: 14,
+          lineHeight: 1.55,
+        }}
       >
-        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-pass" aria-hidden="true" />
-        <div className="text-sm text-pass">
-          <p className="font-semibold">
-            {submitted.demo ? "Message captured (demo mode)" : "Message sent"}
-          </p>
-          <p className="mt-1">
-            Reference{" "}
-            <code className="rounded bg-surface px-1.5 py-0.5 font-mono">{submitted.ticketId}</code>.
-            {submitted.demo
-              ? " Real delivery is skipped in automated runs and when no access key is configured. Email me directly via the link in the side panel."
-              : " I'll reply within a couple of business days."}
-          </p>
-        </div>
+        <p
+          style={{
+            margin: 0,
+            fontFamily: T.headFont,
+            fontSize: 13,
+            fontWeight: 600,
+            color: PAPER_THEME.a11y,
+          }}
+        >
+          ✓ {submitted.demo ? "message captured (demo mode)" : "message sent"}
+        </p>
+        <p style={{ margin: "8px 0 0", color: PAPER_THEME.ink2 }}>
+          Reference{" "}
+          <code
+            style={{
+              fontFamily: T.headFont,
+              padding: "1px 6px",
+              border: `1px solid ${PAPER_THEME.rule}`,
+              background: PAPER_THEME.bg,
+            }}
+          >
+            {submitted.ticketId}
+          </code>
+          .{" "}
+          {submitted.demo
+            ? "Real delivery is skipped in automated runs and when no access key is configured. Email me directly via the link in the side panel."
+            : "I'll reply within a couple of business days."}
+        </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-4 rounded-md border border-divider bg-surface p-5">
-      <div>
-        <label htmlFor="contact-name" className="mb-1 block text-sm font-medium text-fg">
-          Name
-        </label>
+    <form
+      onSubmit={onSubmit}
+      noValidate
+      style={{ display: "flex", flexDirection: "column", gap: 18 }}
+    >
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={labelStyle}>name</span>
         <input
           id="contact-name"
           type="text"
@@ -154,19 +195,26 @@ export function ContactForm() {
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           aria-invalid={errors.name ? "true" : undefined}
           aria-describedby={errors.name ? "contact-name-error" : undefined}
-          className="w-full rounded-md border border-divider bg-surface px-3 py-2 text-sm focus-visible:border-accent"
+          style={inputStyle}
         />
         {errors.name && (
-          <p id="contact-name-error" role="alert" className="mt-1 text-sm text-fail">
+          <p
+            id="contact-name-error"
+            role="alert"
+            style={{
+              margin: 0,
+              fontFamily: T.bodyFont,
+              fontSize: 12,
+              color: PAPER_THEME.accent,
+            }}
+          >
             {errors.name}
           </p>
         )}
-      </div>
+      </label>
 
-      <div>
-        <label htmlFor="contact-email" className="mb-1 block text-sm font-medium text-fg">
-          Email
-        </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={labelStyle}>email</span>
         <input
           id="contact-email"
           type="email"
@@ -176,19 +224,26 @@ export function ContactForm() {
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           aria-invalid={errors.email ? "true" : undefined}
           aria-describedby={errors.email ? "contact-email-error" : undefined}
-          className="w-full rounded-md border border-divider bg-surface px-3 py-2 text-sm focus-visible:border-accent"
+          style={inputStyle}
         />
         {errors.email && (
-          <p id="contact-email-error" role="alert" className="mt-1 text-sm text-fail">
+          <p
+            id="contact-email-error"
+            role="alert"
+            style={{
+              margin: 0,
+              fontFamily: T.bodyFont,
+              fontSize: 12,
+              color: PAPER_THEME.accent,
+            }}
+          >
             {errors.email}
           </p>
         )}
-      </div>
+      </label>
 
-      <div>
-        <label htmlFor="contact-message" className="mb-1 block text-sm font-medium text-fg">
-          Message
-        </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={labelStyle}>message</span>
         <textarea
           id="contact-message"
           rows={5}
@@ -197,17 +252,29 @@ export function ContactForm() {
           onChange={(e) => setForm({ ...form, message: e.target.value })}
           aria-invalid={errors.message ? "true" : undefined}
           aria-describedby={errors.message ? "contact-message-error" : undefined}
-          className="w-full rounded-md border border-divider bg-surface px-3 py-2 text-sm focus-visible:border-accent"
+          style={inputStyle}
         />
         {errors.message && (
-          <p id="contact-message-error" role="alert" className="mt-1 text-sm text-fail">
+          <p
+            id="contact-message-error"
+            role="alert"
+            style={{
+              margin: 0,
+              fontFamily: T.bodyFont,
+              fontSize: 12,
+              color: PAPER_THEME.accent,
+            }}
+          >
             {errors.message}
           </p>
         )}
-      </div>
+      </label>
 
-      {/* Honeypot — hidden from real users; bots tend to fill every field */}
-      <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+      {/* Honeypot — hidden from real users */}
+      <div
+        aria-hidden="true"
+        style={{ position: "absolute", left: -9999, height: 0, width: 0, overflow: "hidden" }}
+      >
         <label htmlFor="contact-gotcha">Leave this field empty</label>
         <input
           id="contact-gotcha"
@@ -220,7 +287,18 @@ export function ContactForm() {
       </div>
 
       {formError && (
-        <p role="alert" className="rounded-md border border-fail/40 bg-fail-soft p-3 text-sm text-fail">
+        <p
+          role="alert"
+          style={{
+            margin: 0,
+            padding: 12,
+            border: `1px solid ${PAPER_THEME.accent}`,
+            background: PAPER_THEME.bg2,
+            color: PAPER_THEME.ink,
+            fontFamily: T.bodyFont,
+            fontSize: 13,
+          }}
+        >
           {formError}
         </p>
       )}
@@ -228,14 +306,22 @@ export function ContactForm() {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-fg hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+        style={{
+          appearance: "none",
+          border: 0,
+          background: PAPER_THEME.accent,
+          color: PAPER_THEME.accentInk,
+          fontFamily: T.headFont,
+          fontSize: 13,
+          fontWeight: 600,
+          padding: "14px 20px",
+          cursor: pending ? "default" : "pointer",
+          alignSelf: "flex-start",
+          letterSpacing: ".02em",
+          opacity: pending ? 0.6 : 1,
+        }}
       >
-        {pending ? (
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-        ) : (
-          <Send className="h-4 w-4" aria-hidden="true" />
-        )}
-        {pending ? "Sending…" : "Send message"}
+        {pending ? "sending…" : "send message →"}
       </button>
     </form>
   );

@@ -1,9 +1,10 @@
-import { Heading } from "@/components/Heading";
+import { DENSITY, PAPER_THEME, T } from "./theme";
+import { SectionHeader } from "./SectionHeader";
 
-const SKILL_GROUPS: { name: string; skills: string[] }[] = [
+const SKILL_GROUPS: { group: string; items: string[] }[] = [
   {
-    name: "Front-End",
-    skills: [
+    group: "Front-End",
+    items: [
       "Angular",
       "TypeScript",
       "JavaScript (ES6+)",
@@ -14,63 +15,93 @@ const SKILL_GROUPS: { name: string; skills: string[] }[] = [
       "Responsive design",
     ],
   },
-  {
-    name: "Back-End",
-    skills: ["Java", "Spring Boot", "REST APIs", "Node.js"],
-  },
-  {
-    name: "Databases",
-    skills: ["PostgreSQL", "Oracle", "MongoDB", "Snowflake"],
-  },
-  {
-    name: "Cloud & DevOps",
-    skills: ["AWS", "Azure", "Git", "Jenkins", "Docker"],
-  },
-  {
-    name: "Accessibility",
-    skills: ["WCAG 2.1 AA", "Section 508", "ARIA", "NVDA", "axe"],
-  },
-  {
-    name: "Tooling",
-    skills: ["Figma", "Jira", "VS Code", "Chrome DevTools", "Lighthouse"],
-  },
-  {
-    name: "CMS",
-    skills: ["WordPress", "Drupal"],
-  },
+  { group: "Back-End", items: ["Java", "Spring Boot", "REST APIs", "Node.js"] },
+  { group: "Databases", items: ["PostgreSQL", "Oracle", "MongoDB", "Snowflake"] },
+  { group: "Cloud/DevOps", items: ["AWS", "Azure", "Git", "Jenkins", "Docker"] },
+  { group: "Accessibility", items: ["WCAG 2.1 AA", "Section 508", "ARIA", "NVDA", "axe"] },
+  { group: "Tooling", items: ["Figma", "Jira", "VS Code", "Chrome DevTools", "Lighthouse"] },
+  { group: "CMS", items: ["WordPress", "Drupal"] },
 ];
 
 export function Skills() {
   return (
-    <section id="skills" aria-labelledby="skills-heading" className="scroll-mt-20 print:break-inside-avoid">
-      <Heading level={2} id="skills-heading" className="mb-3">
-        Skills
-      </Heading>
-      <p className="mb-6 max-w-3xl text-fg-muted">
-        Grouped by category. Tools listed are ones used recently in shipped
-        production work, not aspirational.
-      </p>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {SKILL_GROUPS.map((group) => (
+    <section
+      id="skills"
+      aria-labelledby="skills-heading"
+      style={{
+        scrollMarginTop: 80,
+        padding: `${DENSITY.sectionPad}px 32px`,
+        borderBottom: `1px solid ${PAPER_THEME.rule}`,
+        maxWidth: 1280,
+        margin: "0 auto",
+      }}
+    >
+      <SectionHeader id="skills-heading" num="02" label="Skills" />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: DENSITY.gap * 1.2,
+        }}
+      >
+        {SKILL_GROUPS.map((g) => (
           <section
-            key={group.name}
-            aria-labelledby={`skills-${group.name.replace(/\W+/g, "-").toLowerCase()}`}
-            className="rounded-lg border border-divider bg-surface p-4"
+            key={g.group}
+            aria-labelledby={`skills-${g.group.replace(/\W+/g, "-").toLowerCase()}`}
           >
-            <Heading
-              level={3}
-              id={`skills-${group.name.replace(/\W+/g, "-").toLowerCase()}`}
-              className="mb-3 text-base"
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 10,
+                marginBottom: 14,
+                paddingBottom: 10,
+                borderBottom: `1px solid ${PAPER_THEME.rule}`,
+              }}
             >
-              {group.name}
-            </Heading>
-            <ul className="flex flex-wrap gap-1.5">
-              {group.skills.map((skill) => (
+              <h3
+                id={`skills-${g.group.replace(/\W+/g, "-").toLowerCase()}`}
+                style={{
+                  fontFamily: T.headFont,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  margin: 0,
+                  color: PAPER_THEME.ink,
+                  letterSpacing: ".01em",
+                }}
+              >
+                {g.group}
+              </h3>
+              <span
+                style={{
+                  fontFamily: T.headFont,
+                  fontSize: 11,
+                  color: PAPER_THEME.ink3,
+                }}
+              >
+                {String(g.items.length).padStart(2, "0")}
+              </span>
+            </div>
+            <ul
+              style={{
+                listStyle: "none",
+                margin: 0,
+                padding: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              {g.items.map((it) => (
                 <li
-                  key={skill}
-                  className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-strong"
+                  key={it}
+                  style={{
+                    fontFamily: T.bodyFont,
+                    fontSize: 14,
+                    color: PAPER_THEME.ink2,
+                  }}
                 >
-                  {skill}
+                  {it}
                 </li>
               ))}
             </ul>

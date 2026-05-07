@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { Code, Mail } from "lucide-react";
-import { Heading } from "@/components/Heading";
+import { DENSITY, PAPER_THEME, T } from "./theme";
+import { SectionHeader } from "./SectionHeader";
 import { ContactForm } from "./ContactForm";
 
 export function Contact() {
@@ -8,48 +7,117 @@ export function Contact() {
     <section
       id="contact"
       aria-labelledby="contact-heading"
-      className="scroll-mt-20 print:hidden"
+      style={{
+        scrollMarginTop: 80,
+        padding: `${DENSITY.sectionPad}px 32px`,
+        borderBottom: `1px solid ${PAPER_THEME.rule}`,
+        maxWidth: 1280,
+        margin: "0 auto",
+      }}
     >
-      <Heading level={2} id="contact-heading" className="mb-3">
-        Get in touch
-      </Heading>
-      <p className="mb-6 max-w-3xl text-fg-muted">
-        The form goes to me directly. Plain email and links are below if you
-        prefer.
-      </p>
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,18rem)]">
+      <SectionHeader
+        id="contact-heading"
+        num="05"
+        label="Contact"
+        sub="The form goes to me directly."
+      />
+      <div
+        className="home-contact-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+          gap: 48,
+        }}
+      >
         <ContactForm />
-
-        <aside aria-label="Contact links" className="space-y-3 text-sm">
-          <Link
+        <aside
+          aria-label="Contact links"
+          style={{ display: "flex", flexDirection: "column", gap: 18 }}
+        >
+          <ContactRow
+            k="email"
+            v="basanichaitanyareddy@gmail.com"
             href="mailto:basanichaitanyareddy@gmail.com"
-            className="flex items-start gap-3 rounded-md border border-divider bg-surface p-3 hover:bg-surface-raised"
-          >
-            <Mail className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-            <span>
-              <span className="block font-semibold text-fg">Email</span>
-              <span className="block break-all text-fg-muted">
-                basanichaitanyareddy@gmail.com
-              </span>
-            </span>
-          </Link>
-
-          <a
+          />
+          <ContactRow
+            k="github"
+            v="github.com/chaitanya2404"
             href="https://github.com/chaitanya2404"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-start gap-3 rounded-md border border-divider bg-surface p-3 hover:bg-surface-raised"
-            aria-label="GitHub profile (opens in a new tab)"
+            external
+          />
+          <ContactRow k="based" v="Irving, TX · open to relocation" />
+          <p
+            style={{
+              marginTop: 24,
+              padding: 18,
+              border: `1px solid ${PAPER_THEME.rule}`,
+              fontFamily: T.bodyFont,
+              fontSize: 13,
+              color: PAPER_THEME.ink2,
+              lineHeight: 1.55,
+              textWrap: "pretty",
+            }}
           >
-            <Code className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-            <span>
-              <span className="block font-semibold text-fg">GitHub</span>
-              <span className="block text-fg-muted">github.com/chaitanya2404</span>
-            </span>
-          </a>
+            Plain email works too. If you find an accessibility issue with this
+            site, the form is the fastest way to report it — I read every one.
+          </p>
         </aside>
       </div>
     </section>
   );
+}
+
+function ContactRow({
+  k,
+  v,
+  href,
+  external,
+}: {
+  k: string;
+  v: string;
+  href?: string;
+  external?: boolean;
+}) {
+  const inner = (
+    <>
+      <span
+        style={{
+          fontFamily: T.headFont,
+          fontSize: 11,
+          color: PAPER_THEME.ink3,
+          textTransform: "uppercase",
+          letterSpacing: ".08em",
+        }}
+      >
+        {k}
+      </span>
+      <span style={{ fontFamily: T.headFont, fontSize: 14 }}>{v}</span>
+    </>
+  );
+  const baseStyle: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "space-between",
+    padding: "14px 0",
+    borderBottom: `1px solid ${PAPER_THEME.rule}`,
+    color: PAPER_THEME.ink,
+    textDecoration: "none",
+  };
+  if (href) {
+    return (
+      <a
+        href={href}
+        {...(external
+          ? {
+              target: "_blank",
+              rel: "noopener noreferrer",
+              "aria-label": `${k}: ${v} (opens in a new tab)`,
+            }
+          : {})}
+        style={baseStyle}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return <div style={baseStyle}>{inner}</div>;
 }

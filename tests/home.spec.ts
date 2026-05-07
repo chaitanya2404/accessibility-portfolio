@@ -8,7 +8,7 @@ test.describe("home page", () => {
 
   test("renders the hero h1 and exactly one h1", async ({ page }) => {
     await expect(
-      page.getByRole("heading", { level: 1, name: "Chaitanya Reddy Basani" })
+      page.getByRole("heading", { level: 1, name: /Chaitanya\s+Reddy\s+Basani/ })
     ).toBeVisible();
     expect(await page.locator("h1").count()).toBe(1);
   });
@@ -24,14 +24,23 @@ test.describe("home page", () => {
     await expect(focused).toHaveAttribute("href", "#main-content");
   });
 
-  test("hero CTAs jump to the projects and contact sections", async ({ page }) => {
-    await expect(page.getByRole("link", { name: /View my work/ })).toHaveAttribute("href", "#projects");
-    await expect(page.getByRole("link", { name: /Get in touch/ })).toHaveAttribute("href", "#contact");
+  test("hero CTAs scroll to the projects and contact sections", async ({ page }) => {
+    const projectsBtn = page.getByRole("button", { name: /scroll projects/ });
+    await expect(projectsBtn).toBeVisible();
+    await projectsBtn.click();
+    await expect(page.locator("#projects")).toBeInViewport();
   });
 
   test("renders all main portfolio sections", async ({ page }) => {
-    for (const id of ["about", "skills", "experience", "projects", "accessibility", "contact"]) {
+    for (const id of ["about", "skills", "experience", "projects", "contact"]) {
       await expect(page.locator(`#${id}`)).toBeVisible();
+    }
+  });
+
+  test("home nav has 5 numbered items linking to each section", async ({ page }) => {
+    const nav = page.getByRole("navigation", { name: "Primary" });
+    for (const label of ["About", "Skills", "Experience", "Projects", "Contact"]) {
+      await expect(nav.getByRole("button", { name: new RegExp(label) })).toBeVisible();
     }
   });
 
@@ -41,7 +50,7 @@ test.describe("home page", () => {
       "Front-End",
       "Back-End",
       "Databases",
-      "Cloud & DevOps",
+      "Cloud/DevOps",
       "Accessibility",
       "Tooling",
       "CMS",
@@ -58,29 +67,36 @@ test.describe("home page", () => {
     await expect(section).toContainText("Chemeketa");
   });
 
-  test("Projects section has 5 cards with descriptive labels", async ({ page }) => {
+  test("Projects rail has all 5 entries with descriptive labels", async ({ page }) => {
+    const section = page.locator("#projects");
     await expect(
-      page.getByRole("link", { name: /Open the Division Hub project/ })
+      section.getByRole("link", { name: /Open the Division Hub project/ })
     ).toHaveAttribute("href", "/projects/division-hub");
     await expect(
-      page.getByRole("link", { name: /Open the Components project/ })
+      section.getByRole("link", { name: /Open the Components project/ })
     ).toHaveAttribute("href", "/projects/components");
     await expect(
-      page.getByRole("link", { name: /Open the A11y Audit project/ })
+      section.getByRole("link", { name: /Open the A11y Audit project/ })
     ).toHaveAttribute("href", "/projects/a11y-audit");
     await expect(
-      page.getByRole("link", { name: /Open the Service Request Form project \(opens in a new tab\)/ })
+      section.getByRole("link", { name: /Open the Service Request Form project \(opens in a new tab\)/ })
     ).toHaveAttribute("target", "_blank");
     await expect(
-      page.getByRole("link", { name: /Open the Analytics Dashboard project \(opens in a new tab\)/ })
+      section.getByRole("link", { name: /Open the Analytics Dashboard project \(opens in a new tab\)/ })
     ).toHaveAttribute("target", "_blank");
+  });
+
+  test("Projects rail next button advances the featured banner", async ({ page }) => {
+    const section = page.locator("#projects");
+    await expect(section).toContainText("Division Hub");
+    await section.getByRole("button", { name: "Next project" }).click();
+    await expect(section).toContainText(/now showing · 02/);
   });
 
   test("Contact form validates and shows role=alert errors", async ({ page }) => {
     const form = page.locator("#contact form");
     await form.locator("input#contact-name").fill("Test");
     await form.locator("input#contact-email").fill("test@example.com");
-    // 'hi' passes HTML5 required + minlength but trips Zod's min(10)
     await form.locator("textarea#contact-message").fill("hi");
     await form.locator("button[type=submit]").click();
     await expect(page.locator("main").getByRole("alert").first()).toBeVisible();
