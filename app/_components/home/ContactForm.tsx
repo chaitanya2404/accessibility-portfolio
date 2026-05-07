@@ -3,15 +3,41 @@
 import { useState, useTransition } from "react";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { useAnnounce } from "@/components/LiveRegion";
-import {
-  submitContactMessage,
-  type ContactInput,
-} from "./contact-actions";
+
+type ContactInput = {
+  name: string;
+  email: string;
+  message: string;
+};
 
 type FieldErrors = Partial<Record<keyof ContactInput, string>>;
 
-type Submission =
-  | { ticketId: string; demo: boolean };
+type Submission = { ticketId: string; demo: boolean };
+
+const ACCESS_KEY =
+  process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY ??
+  "ce6e7585-7102-4683-91c8-525ded9f33b9";
+
+function validate(form: ContactInput): FieldErrors {
+  const errors: FieldErrors = {};
+  if (!form.name.trim()) errors.name = "Name is required.";
+  else if (form.name.length > 120) errors.name = "Name is too long.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+    errors.email = "Enter a valid email.";
+  if (form.message.trim().length < 10)
+    errors.message = "Message must be at least 10 characters.";
+  else if (form.message.length > 2000) errors.message = "Message is too long.";
+  return errors;
+}
+
+function newTicketId() {
+  return `MSG-${Date.now().toString(36).toUpperCase()}`;
+}
+
+function isAutomatedBrowser(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return navigator.webdriver === true;
+}
 
 export function ContactForm() {
   const [form, setForm] = useState<ContactInput>({ name: "", email: "", message: "" });
@@ -24,24 +50,68 @@ export function ContactForm() {
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setErrors({});
     setFormError(null);
+
+    const fieldErrors = validate(form);
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      announce(`Form has errors: ${Object.values(fieldErrors)[0]}`, "assertive");
+      return;
+    }
+    setErrors({});
+
+    if (honey) {
+      // Honeypot tripped: pretend success and don't burn a real send.
+      setSubmitted({ ticketId: "MSG-BOT", demo: true });
+      return;
+    }
+
+    const ticketId = newTicketId();
+
+    // Skip real delivery in automated browsers (Playwright) and when no key is
+    // present. Both fall back to a "demo mode" success state.
+    if (!ACCESS_KEY || isAutomatedBrowser()) {
+      setSubmitted({ ticketId, demo: true });
+      announce(`Message captured locally. Reference ${ticketId}.`, "polite");
+      return;
+    }
+
     startTransition(async () => {
-      const response = await submitContactMessage({ ...form, _gotcha: honey });
-      if (response.ok) {
-        setSubmitted({ ticketId: response.ticketId, demo: response.demo === true });
-        announce(
-          response.demo
-            ? `Message captured locally. Reference ${response.ticketId}.`
-            : `Message sent. Reference ${response.ticketId}.`,
-          "polite"
-        );
-      } else {
-        setErrors(response.fieldErrors);
-        if (response.formError) setFormError(response.formError);
-        const first =
-          Object.values(response.fieldErrors)[0] ?? response.formError ?? "Check the form.";
-        announce(`Form has errors: ${first}`, "assertive");
+      const formData = new FormData();
+      formData.append("access_key", ACCESS_KEY);
+      formData.append("from_name", form.name);
+      formData.append("replyto", form.email);
+      formData.append(
+        "subject",
+        `Portfolio contact — ${form.name} (${ticketId})`
+      );
+      formData.append("name", form.name);
+      formData.append("email", form.email);
+      formData.append("message", form.message);
+      formData.append("ticketId", ticketId);
+
+      try {
+        const response = await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          body: formData,
+        });
+        const data = (await response.json().catch(() => ({}))) as {
+          success?: boolean;
+          message?: string;
+        };
+        if (response.ok && data.success !== false) {
+          setSubmitted({ ticketId, demo: false });
+          announce(`Message sent. Reference ${ticketId}.`, "polite");
+        } else {
+          const reason =
+            data.message ?? `HTTP ${response.status}`;
+          setFormError(`Could not deliver your message: ${reason}`);
+          announce(`Form submission failed: ${reason}`, "assertive");
+        }
+      } catch (err) {
+        const reason = (err as Error).message;
+        setFormError(`Could not deliver your message: ${reason}`);
+        announce(`Form submission failed: ${reason}`, "assertive");
       }
     });
   };
@@ -61,7 +131,7 @@ export function ContactForm() {
             Reference{" "}
             <code className="rounded bg-surface px-1.5 py-0.5 font-mono">{submitted.ticketId}</code>.
             {submitted.demo
-              ? " The delivery key isn't configured on this deployment yet, so the form validated successfully but no email was sent. Email me directly via the link in the side panel."
+              ? " Real delivery is skipped in automated runs and when no access key is configured. Email me directly via the link in the side panel."
               : " I'll reply within a couple of business days."}
           </p>
         </div>
@@ -70,7 +140,7 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 rounded-md border border-divider bg-surface p-5">
+    <form onSubmit={onSubmit} noValidate className="space-y-4 rounded-md border border-divider bg-surface p-5">
       <div>
         <label htmlFor="contact-name" className="mb-1 block text-sm font-medium text-fg">
           Name
