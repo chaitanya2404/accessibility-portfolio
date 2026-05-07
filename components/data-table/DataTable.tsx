@@ -224,7 +224,7 @@ export function DataTable<T>({
                   <th
                     key={col.id}
                     scope="col"
-                    aria-sort={col.sortable ? ariaSort : undefined}
+                    aria-sort={col.sortable ? ariaSort : "none"}
                     className={clsx(
                       "border-b border-divider px-4 py-3 font-semibold",
                       col.align === "right" && "text-right"

@@ -1,6 +1,7 @@
 import { Heading } from "@/components/Heading";
 import type { Department } from "../data";
-import { StaffTable } from "./StaffTable";
+import { PresenceIndicator } from "./PresenceIndicator";
+import { StaffDirectory } from "./StaffDirectory";
 
 export function DepartmentPage({ department }: { department: Department }) {
   return (
@@ -10,13 +11,16 @@ export function DepartmentPage({ department }: { department: Department }) {
         className="mb-12 grid gap-8 md:grid-cols-[1fr_minmax(0,18rem)] md:items-start"
       >
         <div>
-          <p className="mb-3 text-sm font-medium uppercase tracking-wider text-indigo-700">
-            Department
-          </p>
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <p className="text-sm font-medium uppercase tracking-wider text-accent">
+              Department
+            </p>
+            <PresenceIndicator departmentSlug={department.slug} />
+          </div>
           <Heading level={1} id="dept-heading">
             {department.name}
           </Heading>
-          <p className="mt-4 text-lg text-slate-700">{department.description}</p>
+          <p className="mt-4 text-lg text-fg-muted">{department.description}</p>
         </div>
         <div
           aria-hidden="true"
@@ -28,7 +32,7 @@ export function DepartmentPage({ department }: { department: Department }) {
         <Heading level={2} id="responsibilities-heading" className="mb-4">
           What we do
         </Heading>
-        <ul className="list-disc space-y-2 pl-6 text-slate-700 marker:text-indigo-600">
+        <ul className="list-disc space-y-2 pl-6 text-fg-muted marker:text-accent">
           {department.responsibilities.map((item) => (
             <li key={item}>{item}</li>
           ))}
@@ -39,11 +43,12 @@ export function DepartmentPage({ department }: { department: Department }) {
         <Heading level={2} id="staff-heading" className="mb-2">
           Staff directory
         </Heading>
-        <p className="mb-6 text-sm text-slate-600">
-          Click a column header to sort. Sort state is announced to screen
-          readers via <code className="rounded bg-slate-100 px-1 py-0.5">aria-sort</code>.
+        <p className="mb-6 text-sm text-fg-muted">
+          Sort, filter, and pagination state lives in the URL — share or
+          bookmark a filtered view. Sort state is announced via{" "}
+          <code className="rounded bg-surface-raised px-1 py-0.5">aria-sort</code>.
         </p>
-        <StaffTable staff={department.staff} departmentName={department.name} />
+        <StaffDirectory staff={department.staff} departmentName={department.name} />
       </section>
     </div>
   );
