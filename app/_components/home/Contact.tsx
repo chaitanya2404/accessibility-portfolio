@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Code, Mail, User } from "lucide-react";
+import { Code, Mail } from "lucide-react";
 import { Heading } from "@/components/Heading";
 import { ContactForm } from "./ContactForm";
 
@@ -48,14 +48,6 @@ export function Contact() {
               <span className="block text-fg-muted">github.com/chaitanya2404</span>
             </span>
           </a>
-
-          <p className="flex items-start gap-3 rounded-md border border-divider bg-surface-raised p-3">
-            <User className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" aria-hidden="true" />
-            <span className="text-fg-subtle">
-              <span className="block font-semibold text-fg-muted">LinkedIn</span>
-              <span className="block">Coming soon</span>
-            </span>
-          </p>
         </aside>
       </div>
     </section>
