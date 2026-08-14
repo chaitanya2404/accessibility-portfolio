@@ -5,7 +5,12 @@ type Bucket = {
 
 const buckets = new Map<string, Bucket>();
 
-const CAPACITY = 10;
+// Under Playwright every request arrives without x-forwarded-for/x-real-ip, so
+// all parallel workers share the single "anonymous" bucket. Raise the ceiling
+// for that case so the limiter never fires mid-suite; production keeps 10.
+const UNDER_TEST = process.env.PLAYWRIGHT === "1" || process.env.NODE_ENV === "test";
+
+const CAPACITY = UNDER_TEST ? 10_000 : 10;
 const REFILL_PER_SECOND = CAPACITY / 60;
 
 export type RateLimitResult =

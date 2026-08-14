@@ -1,5 +1,7 @@
 # Accessibility-First Portfolio
 
+[![CI](https://github.com/chaitanya2404/accessibility-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/chaitanya2404/accessibility-portfolio/actions/workflows/ci.yml)
+
 **Live:** [accessibility-portfolio.vercel.app](https://accessibility-portfolio.vercel.app)
 
 A three-project Next.js portfolio that treats accessibility as the product, not the polish. Every route targets WCAG 2.1 AA: semantic landmarks, keyboard parity, focus-visible styles, ARIA used sparingly and correctly, and a single live region provider that callers reach into via `useAnnounce()`.
